@@ -1,15 +1,16 @@
 import io
 import os
 import mimetypes
+import uuid
 from importlib.metadata import version
-from flask import Blueprint, render_template, Response
+from flask import Blueprint, flash, redirect, render_template, Response, request, url_for
 from PIL import Image, ImageOps
 from config import settings, storage
 
 page = Blueprint("page", __name__, template_folder="templates")
 
-MAX_WIDTH = 200
-MAX_HEIGHT = 200
+MAX_WIDTH = 600
+MAX_HEIGHT = 600
 
 
 @page.get("/image/<path:filename>")

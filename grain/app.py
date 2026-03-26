@@ -4,7 +4,6 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 
 from grain.extensions import debug_toolbar, flask_static_digest
 from grain.page.views import page
-from grain.up.views import up
 
 
 def create_app(settings_override=None):
@@ -23,7 +22,6 @@ def create_app(settings_override=None):
 
     middleware(app)
 
-    app.register_blueprint(up)
     app.register_blueprint(page)
 
     extensions(app)
