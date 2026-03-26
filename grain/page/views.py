@@ -30,10 +30,43 @@ def serve_image(filename):
         output.read(), mimetype=img.format and f"image/{img.format.lower()}"
     )
 
+@page.post("/upload")
+def upload():
+    if "image" not in request.files:
+        flash("No image provided")
+        return redirect(url_for("page.home"))
+
+    file = request.files["image"]
+    text = request.form.get("text", "")
+
+    if file.filename == "":
+        flash("No image selected")
+        return redirect(url_for("page.home"))
+
+    if file:
+        ext = os.path.splitext(file.filename)[1].lower()
+        filename = f"dataset/{uuid.uuid4()}{ext}"
+
+        client = storage.get_minio_client()
+
+        client.put_object(
+            bucket_name=settings.MINIO_BUCKET,
+            object_name=filename,
+            data=file,
+            length=-1,
+            part_size=5 * 1024 * 1024,
+            metadata={"text": text},
+        )
+
+        flash("Upload successful")
+
+    return redirect(url_for("page.home"))
+
+
 
 @page.get("/upload")
 def upload_image():
-    return render_template("page/upload.html")
+    return render_template("page/upload.html", active_page="upload")
 
 
 @page.get("/")
@@ -53,5 +86,5 @@ def home():
 
     items.sort(key=lambda x: x["last_modified"], reverse=True)
 
-    context = {"items": items}
+    context = {"items": items, "active_page": "dashboard"}
     return render_template("page/home.html", **context)

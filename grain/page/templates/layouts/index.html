@@ -24,10 +24,10 @@
         <div class="collapse navbar-collapse" id="navbarCollapse">
           <ul class="nav nav-underline gap-6 overflow-x border-bottom">
             <li class="nav-item">
-              <a href="#" class="nav-link active">Dashboard</a>
+              <a href="{{ url_for('page.home') }}" class="nav-link{% if active_page == 'dashboard' %} active{% endif %}">Dashboard</a>
             </li>
             <li class="nav-item">
-              <a href="{{ url_for('page.upload_image') }}" class="nav-link">Upload</a>
+              <a href="{{ url_for('page.upload_image') }}" class="nav-link{% if active_page == 'upload' %} active{% endif %}">Upload</a>
             </li>
           </ul>
         </div>
