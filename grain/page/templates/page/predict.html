@@ -1,0 +1,38 @@
+{% extends "layouts/index.html" %}
+
+{% block title %}GRAIN - Predict{% endblock %}
+
+{% block body %}
+
+<div class="container-fluid">
+  <div class="mb-4">
+    <form method="POST" action="{{ url_for('page.predict_post') }}" enctype="multipart/form-data" class="card p-3">
+      <div class="mb-3">
+        <label for="image" class="form-label">Upload Image to Predict</label>
+        <input type="file" name="image" id="image" class="form-control" accept="image/*" required>
+      </div>
+      <button type="submit" class="btn btn-primary">Predict Diagnosis</button>
+    </form>
+  </div>
+
+  {% if results %}
+  <div class="card">
+    <div class="card-header">
+      <h5 class="mb-0">Prediction Results</h5>
+    </div>
+    <div class="card-body">
+      {% for result in results %}
+      <div class="mb-3{% if not loop.last %} border-bottom pb-3{% endif %}">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="badge bg-primary">Match #{{ loop.index }}</span>
+          <span class="text-muted">Confidence: {{ "%.2f"|format(result.confidence_score * 100) }}%</span>
+        </div>
+        <p class="mb-0">{{ result.clinical_note }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}

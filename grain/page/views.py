@@ -29,7 +29,7 @@ def serve_image(filename):
 
     img = Image.open(io.BytesIO(data))
     img = ImageOps.exif_transpose(img)
-    img = img.convert('RGB')
+    img = img.convert("RGB")
     img.thumbnail((MAX_WIDTH, MAX_HEIGHT), Image.LANCZOS)
 
     output = io.BytesIO()
@@ -119,3 +119,100 @@ def home():
 
     context = {"items": items, "active_page": "dashboard"}
     return render_template("page/home.html", **context)
+
+
+@page.get("/predict")
+def predict():
+    return render_template("page/predict.html", active_page="predict", results=None)
+
+
+@page.post("/predict")
+def predict_post():
+    if "image" not in request.files:
+        flash("No image provided")
+        return redirect(url_for("page.predict"))
+
+    file = request.files["image"]
+    if file.filename == "":
+        flash("No image selected")
+        return redirect(url_for("page.predict"))
+
+    try:
+        from grain.medical import Medical
+    except ImportError as e:
+        flash(f"Failed to import Medical module: {e}")
+        return redirect(url_for("page.predict"))
+
+
+    try:
+        client = storage.get_minio_client()
+
+        items = []
+        objects = client.list_objects(
+            bucket_name=settings.MINIO_BUCKET, prefix="dataset/"
+        )
+        seen_bases = set()
+        for obj in objects:
+            if obj.object_name.endswith(".txt"):
+                continue
+            base_name = obj.object_name.rsplit(".", 1)[0]
+            if base_name in seen_bases:
+                continue
+            seen_bases.add(base_name)
+
+            try:
+                txt_response = client.get_object(
+                    settings.MINIO_BUCKET, f"{base_name}.txt"
+                )
+                text = txt_response.read().decode("utf-8")
+            except:
+                text = ""
+
+            if text:
+                items.append((obj.object_name, text))
+
+        if not items:
+            flash(
+                "No indexed cases found. Please upload images with clinical notes first."
+            )
+            return redirect(url_for("page.predict"))
+
+        temp_paths = []
+        image_paths = []
+        clinical_notes = []
+
+        for img_name, note in items:
+            response = client.get_object(settings.MINIO_BUCKET, img_name)
+            data = response.read()
+            img = Image.open(io.BytesIO(data))
+            img = img.convert("RGB")
+
+            temp_path = f"/tmp/{uuid.uuid4()}.jpg"
+            img.save(temp_path)
+            temp_paths.append(temp_path)
+            image_paths.append(temp_path)
+            clinical_notes.append(note)
+
+        medical = Medical(settings.CLIP_MODEL_NAME, settings.CLIP_CHECKPOINT_PATH)
+        medical.add_cases_to_library(image_paths, clinical_notes)
+
+        file.seek(0)
+        file_content = file.read()
+        query_img = Image.open(io.BytesIO(file_content))
+        query_img = query_img.convert("RGB")
+        query_path = f"/tmp/{uuid.uuid4()}_query.jpg"
+        query_img.save(query_path)
+
+        results = medical.query_diagnosis(query_path, top_k=3)
+
+        for path in temp_paths:
+            os.remove(path)
+        os.remove(query_path)
+
+        return render_template(
+            "page/predict.html", active_page="predict", results=results
+        )
+
+    except Exception as e:
+        flash(f"Prediction failed: {e}")
+        return redirect(url_for("page.predict"))
