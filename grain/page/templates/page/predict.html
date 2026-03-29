@@ -8,30 +8,44 @@
   <div class="mb-4 col-5">
     <form method="POST" action="{{ url_for('page.predict_post') }}" enctype="multipart/form-data" class="card p-3">
       <div class="mb-3">
-        <label for="image" class="form-label">Upload Image to Predict</label>
+        <label for="image" class="form-label">Upload image to predict</label>
         <input type="file" name="image" id="image" class="form-control" accept="image/*" required>
       </div>
-      <button type="submit" class="btn btn-primary">Predict Diagnosis</button>
+      <button type="submit" class="btn btn-primary">Predict</button>
     </form>
   </div>
 
   {% if results %}
-    <div class="card">
-      <div class="card-header">
-        <h5 class="mb-0">Prediction Results</h5>
-      </div>
-      <div class="card-body">
-        {% for result in results %}
-        <div class="mb-3{% if not loop.last %} border-bottom pb-3{% endif %}">
+  <div class="card mb-4 col-6">
+    <div class="card-header">
+      <h5 class="mb-0">Query Image</h5>
+    </div>
+    <div class="card-body text-center">
+      <img src="{{ url_for('page.serve_image', filename=query_image) }}" class="img-fluid" style="max-height: 300px;" alt="Query image" />
+    </div>
+  </div>
+
+  <div class="card col-6">
+    <div class="card-header">
+      <h5 class="mb-0">Prediction Results</h5>
+    </div>
+    <div class="card-body">
+      {% for result in results %}
+      <div class="row{% if not loop.last %} border-bottom pb-3 mb-3{% endif %}">
+        <div class="col-md-4">
+          <img src="{{ url_for('page.serve_image', filename=result.image_name) }}" class="img-fluid rounded" alt="Match image" />
+        </div>
+        <div class="col-md-8">
           <div class="d-flex justify-content-between align-items-center mb-2">
             <span class="badge bg-primary">Match #{{ loop.index }}</span>
             <span class="text-muted">Confidence: {{ "%.2f"|format(result.confidence_score * 100) }}%</span>
           </div>
           <p class="mb-0">{{ result.clinical_note }}</p>
         </div>
-        {% endfor %}
       </div>
+      {% endfor %}
     </div>
+  </div>
   {% endif %}
 </div>
 

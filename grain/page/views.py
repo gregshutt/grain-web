@@ -150,11 +150,22 @@ def predict_post():
     query_path = f"/tmp/{uuid.uuid4()}_query.jpg"
     query_img.save(query_path)
 
-    medical = settings.get_medical()
-    results = medical.query_diagnosis(query_path, top_k=3)
+    results = settings.get_medical().query_diagnosis(query_path, top_k=3)
 
     os.remove(query_path)
 
+    client = storage.get_minio_client()
+    query_filename = f"predict/{uuid.uuid4()}.jpg"
+    client.put_object(
+        bucket_name=settings.MINIO_BUCKET,
+        object_name=query_filename,
+        data=io.BytesIO(file_content),
+        length=len(file_content),
+    )
+
     return render_template(
-        "page/predict.html", active_page="predict", results=results
+        "page/predict.html",
+        active_page="predict",
+        results=results,
+        query_image=query_filename,
     )

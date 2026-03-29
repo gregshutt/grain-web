@@ -21,6 +21,7 @@ class Medical:
         self.index = faiss.IndexFlatIP(self.embed_dim)
         
         # load clinical notes
+        self.images_database = []
         self.notes_database = []
 
         client = storage.get_minio_client()
@@ -70,6 +71,7 @@ class Medical:
         # stack and add to faiss index
         embeddings_matrix = np.vstack(embeddings)
         self.index.add(embeddings_matrix)
+        self.images_database.extend(image_paths)
         self.notes_database.extend(clinical_notes)
         print(f"Successfully indexed {len(clinical_notes)} medical cases.")
 
@@ -84,6 +86,7 @@ class Medical:
         for i, idx in enumerate(indices[0]):
             results.append({
                 "confidence_score": float(similarities[0][i]),
-                "clinical_note": self.notes_database[idx]
+                "clinical_note": self.notes_database[idx],
+                "image_name": self.images_database[idx],
             })
         return results
